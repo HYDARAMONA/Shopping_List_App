@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // import 'package:flutter/widgets.dart';
 import 'package:shopping_list/data/categories.dart';
-import 'package:shopping_list/data/items.dart';
+
 import 'package:shopping_list/models/category_blueprint.dart';
 // import 'package:shopping_list/models/grocery_item_blueprint.dart';
 import 'package:http/http.dart' as http;
