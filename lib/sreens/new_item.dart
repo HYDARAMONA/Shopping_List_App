@@ -1,9 +1,14 @@
 // import 'package:flutter/cupertino.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // import 'package:flutter/widgets.dart';
 import 'package:shopping_list/data/categories.dart';
+import 'package:shopping_list/data/items.dart';
 import 'package:shopping_list/models/category_blueprint.dart';
+// import 'package:shopping_list/models/grocery_item_blueprint.dart';
+import 'package:http/http.dart' as http;
 import 'package:shopping_list/models/grocery_item_blueprint.dart';
 
 class NewItem extends StatefulWidget {
@@ -15,20 +20,45 @@ class NewItem extends StatefulWidget {
 
 class _NewItemState extends State<NewItem> {
   final _formKey = GlobalKey<FormState>();
+  var _currentlyLoading = false;
 
   var _enteredItemName = '';
   var _enteredItemAmount = 1;
   var _initialCategory = categories[Categories.vegetables]!;
 
-  void _saveItem() {
+  void _saveItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      Navigator.of(context).pop(GroceryItem(
-        id: DateTime.now().toString(),
-        name: _enteredItemName,
-        quantity: _enteredItemAmount,
-        category: _initialCategory,
-      ));
+      setState(() {
+        _currentlyLoading = true;
+      });
+      final url = Uri.https('Base URL', 'Path');
+      final response = await http.post(
+        url,
+        headers: {'content-type': 'application/json'},
+        body: json.encode(
+          {
+            'name': _enteredItemName,
+            'quantity': _enteredItemAmount,
+            'category': _initialCategory.itemName,
+          },
+        ),
+      );
+      final Map<String, dynamic> resData = json.decode(response.body);
+      print(response.body);
+      print(response.statusCode);
+
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop(
+        GroceryItem(
+            id: resData['name'],
+            name: _enteredItemName,
+            quantity: _enteredItemAmount,
+            category: _initialCategory),
+      );
     }
   }
 
@@ -126,14 +156,22 @@ class _NewItemState extends State<NewItem> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: () {
-                      _formKey.currentState!.reset();
-                    },
+                    onPressed: _currentlyLoading
+                        ? null
+                        : () {
+                            _formKey.currentState!.reset();
+                          },
                     child: const Text('Reset'),
                   ),
                   ElevatedButton(
-                    onPressed: _saveItem,
-                    child: const Text('Add Item'),
+                    onPressed: _currentlyLoading ? null : _saveItem,
+                    child: _currentlyLoading
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(),
+                          )
+                        : const Text('Add Item'),
                   ),
                 ],
               )
